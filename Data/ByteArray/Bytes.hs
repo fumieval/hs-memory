@@ -149,7 +149,7 @@ bytesEq b1@(Bytes m1) b2@(Bytes m2)
             case readWord8Array# m1 i s of
                 (# s', e1 #) -> case readWord8Array# m2 i s' of
                     (# s'', e2 #) ->
-                        if booleanPrim (eqWord# e1 e2)
+                        if booleanPrim (eqWord# (word8ToWord# e1) (word8ToWord# e2))
                             then loop (i +# 1#) s''
                             else (# s'', False #)
     {-# INLINE loop #-}
@@ -171,9 +171,9 @@ bytesCompare b1@(Bytes m1) b2@(Bytes m2) = unsafeDoIO $ IO $ \s -> loop 0# s
             case readWord8Array# m1 i s1 of
                 (# s2, e1 #) -> case readWord8Array# m2 i s2 of
                     (# s3, e2 #) ->
-                        if booleanPrim (eqWord# e1 e2)
+                        if booleanPrim (eqWord# (word8ToWord# e1) (word8ToWord# e2))
                             then loop (i +# 1#) s3
-                            else if booleanPrim (ltWord# e1 e2) then (# s3, LT #)
+                            else if booleanPrim (ltWord# (word8ToWord# e1) (word8ToWord# e2)) then (# s3, LT #)
                                                                 else (# s3, GT #)
 
 bytesUnpackChars :: Bytes -> String -> String
@@ -202,7 +202,7 @@ bytesUnpackChars (Bytes mba) xs = chunkLoop 0#
     rChar :: Int# -> IO Char
     rChar idx = IO $ \s ->
         case readWord8Array# mba idx s of
-            (# s2, w #) -> (# s2, C# (chr# (word2Int# w)) #)
+            (# s2, w #) -> (# s2, C# (chr# (word2Int# (word8ToWord# w))) #)
 
 {-
 bytesShowHex :: Bytes -> String

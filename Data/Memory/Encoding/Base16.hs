@@ -43,10 +43,10 @@ showHexadecimal withPtr = doChunks 0
             | len < 4   = doUnique ofs len
             | otherwise = do
                 let !(W8# a, W8# b, W8# c, W8# d) = unsafeDoIO $ withPtr (read4 ofs)
-                    !(# w1, w2 #) = convertByte a
-                    !(# w3, w4 #) = convertByte b
-                    !(# w5, w6 #) = convertByte c
-                    !(# w7, w8 #) = convertByte d
+                    !(# w1, w2 #) = convertByte (word8ToWord# a)
+                    !(# w3, w4 #) = convertByte (word8ToWord# b)
+                    !(# w5, w6 #) = convertByte (word8ToWord# c)
+                    !(# w7, w8 #) = convertByte (word8ToWord# d)
                  in wToChar w1 : wToChar w2 : wToChar w3 : wToChar w4
                   : wToChar w5 : wToChar w6 : wToChar w7 : wToChar w8
                   : doChunks (ofs + 4) (len - 4)
@@ -55,7 +55,7 @@ showHexadecimal withPtr = doChunks 0
             | len == 0  = []
             | otherwise =
                 let !(W8# b)      = unsafeDoIO $ withPtr (byteIndex ofs)
-                    !(# w1, w2 #) = convertByte b
+                    !(# w1, w2 #) = convertByte (word8ToWord# b)
                  in wToChar w1 : wToChar w2 : doUnique (ofs + 1) (len - 1)
 
         read4 :: Int -> Ptr Word8 -> IO (Word8, Word8, Word8, Word8)
@@ -82,9 +82,9 @@ toHexadecimal bout bin n = loop 0
             | i == n  = return ()
             | otherwise = do
                 (W8# w) <- peekByteOff bin i
-                let !(# w1, w2 #) = convertByte w
-                pokeByteOff bout (i * 2)     (W8# w1)
-                pokeByteOff bout (i * 2 + 1) (W8# w2)
+                let !(# w1, w2 #) = convertByte (word8ToWord# w)
+                pokeByteOff bout (i * 2)     (W8# (wordToWord8# w1))
+                pokeByteOff bout (i * 2 + 1) (W8# (wordToWord8# w2))
                 loop (i+1)
 
 -- | Convert a value Word# to two Word#s containing
@@ -93,7 +93,7 @@ convertByte :: Word# -> (# Word#, Word# #)
 convertByte b = (# r tableHi b, r tableLo b #)
   where
         r :: Addr# -> Word# -> Word#
-        r table index = indexWord8OffAddr# table (word2Int# index)
+        r table index = word8ToWord# (indexWord8OffAddr# table (word2Int# index))
 
         !tableLo =
             "0123456789abcdef0123456789abcdef\
@@ -131,8 +131,8 @@ fromHexadecimal dst src n
                     then return $ Just i
                     else pokeByteOff dst di (a .|. b) >> loop (di+1) (i+2)
 
-        rLo (W8# index) = W8# (indexWord8OffAddr# tableLo (word2Int# index))
-        rHi (W8# index) = W8# (indexWord8OffAddr# tableHi (word2Int# index))
+        rLo (W8# index) = W8# (indexWord8OffAddr# tableLo (word2Int# (word8ToWord# index)))
+        rHi (W8# index) = W8# (indexWord8OffAddr# tableHi (word2Int# (word8ToWord# index)))
         
         !tableLo =
                 "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\

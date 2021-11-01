@@ -47,11 +47,11 @@ fnv1 (Ptr addr) (I# n) = IO $ \s -> loop 0x811c9dc5## 0# s
   where 
         loop :: Word# -> Int# -> State# s -> (# State# s, FnvHash32 #)
         loop !acc i s
-            | booleanPrim (i ==# n) = (# s, FnvHash32 $ W32# (narrow32Word# acc) #)
+            | booleanPrim (i ==# n) = (# s, FnvHash32 $ W32# (wordToWord32# (narrow32Word# acc)) #)
             | otherwise             =
                 case readWord8OffAddr# addr i s of
                     (# s2, v #) ->
-                        let !nacc = (0x01000193## `timesWord#` acc) `xor#` v
+                        let !nacc = (0x01000193## `timesWord#` acc) `xor#` word8ToWord# v
                          in loop nacc (i +# 1#) s2
 
 -- | compute FNV1a (32 bit variant) of a raw piece of memory
@@ -60,11 +60,11 @@ fnv1a (Ptr addr) (I# n) = IO $ \s -> loop 0x811c9dc5## 0# s
   where 
         loop :: Word# -> Int# -> State# s -> (# State# s, FnvHash32 #)
         loop !acc i s
-            | booleanPrim (i ==# n) = (# s, FnvHash32 $ W32# (narrow32Word# acc) #)
+            | booleanPrim (i ==# n) = (# s, FnvHash32 $ W32# (wordToWord32# (narrow32Word# acc)) #)
             | otherwise             =
                 case readWord8OffAddr# addr i s of
                     (# s2, v #) ->
-                        let !nacc = 0x01000193## `timesWord#` (acc `xor#` v)
+                        let !nacc = 0x01000193## `timesWord#` (acc `xor#` word8ToWord# v)
                          in loop nacc (i +# 1#) s2
 
 -- | compute FNV1 (64 bit variant) of a raw piece of memory
@@ -77,7 +77,7 @@ fnv1_64 (Ptr addr) (I# n) = IO $ \s -> loop fnv64Const 0# s
             | otherwise             =
                 case readWord8OffAddr# addr i s of
                     (# s2, v #) ->
-                        let !nacc = (fnv64Prime `timesWord64#` acc) `xor64#` (wordToWord64# v)
+                        let !nacc = (fnv64Prime `timesWord64#` acc) `xor64#` (wordToWord64# (word8ToWord# v))
                          in loop nacc (i +# 1#) s2
 
         fnv64Const :: Word64#
@@ -96,7 +96,7 @@ fnv1a_64 (Ptr addr) (I# n) = IO $ \s -> loop fnv64Const 0# s
             | otherwise             =
                 case readWord8OffAddr# addr i s of
                     (# s2, v #) ->
-                        let !nacc = fnv64Prime `timesWord64#` (acc `xor64#` wordToWord64# v)
+                        let !nacc = fnv64Prime `timesWord64#` (acc `xor64#` wordToWord64# (word8ToWord# v))
                          in loop nacc (i +# 1#) s2
 
         fnv64Const :: Word64#

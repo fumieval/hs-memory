@@ -92,10 +92,10 @@ toBase64Internal table dst src len padded = loop 0 0
 
 convert3 :: Addr# -> Word8 -> Word8 -> Word8 -> (Word8, Word8, Word8, Word8)
 convert3 table (W8# a) (W8# b) (W8# c) =
-    let !w = narrow8Word# (uncheckedShiftRL# a 2#)
-        !x = or# (and# (uncheckedShiftL# a 4#) 0x30##) (uncheckedShiftRL# b 4#)
-        !y = or# (and# (uncheckedShiftL# b 2#) 0x3c##) (uncheckedShiftRL# c 6#)
-        !z = and# c 0x3f##
+    let !w = narrow8Word# (uncheckedShiftRL# (word8ToWord# a) 2#)
+        !x = or# (and# (uncheckedShiftL# (word8ToWord# a) 4#) 0x30##) (uncheckedShiftRL# (word8ToWord# b) 4#)
+        !y = or# (and# (uncheckedShiftL# (word8ToWord# b) 2#) 0x3c##) (uncheckedShiftRL# (word8ToWord# c) 6#)
+        !z = and# (word8ToWord# c) 0x3f##
      in (index w, index x, index y, index z)
   where
         index :: Word# -> Word8
@@ -211,7 +211,7 @@ fromBase64Unpadded rset dst src len = loop 0 0
 
 rsetURL :: Word8 -> Word8
 rsetURL (W8# w)
-    | booleanPrim (w `leWord#` 0xff##) = W8# (indexWord8OffAddr# rsetTable (word2Int# w))
+    | booleanPrim (word8ToWord# w `leWord#` 0xff##) = W8# (indexWord8OffAddr# rsetTable (word2Int# (word8ToWord# w)))
     | otherwise                        = 0xff
   where !rsetTable = "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\
                      \\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\
@@ -232,7 +232,7 @@ rsetURL (W8# w)
 
 rsetOpenBSD :: Word8 -> Word8
 rsetOpenBSD (W8# w)
-    | booleanPrim (w `leWord#` 0xff##) = W8# (indexWord8OffAddr# rsetTable (word2Int# w))
+    | booleanPrim (word8ToWord# w `leWord#` 0xff##) = W8# (indexWord8OffAddr# rsetTable (word2Int# (word8ToWord# w)))
     | otherwise                        = 0xff
   where !rsetTable = "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\
                      \\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\
@@ -309,7 +309,7 @@ fromBase64 dst src len
 
         rset :: Word8 -> Word8
         rset (W8# w)
-            | booleanPrim (w `leWord#` 0xff##) = W8# (indexWord8OffAddr# rsetTable (word2Int# w))
+            | booleanPrim (word8ToWord# w `leWord#` 0xff##) = W8# (indexWord8OffAddr# rsetTable (word2Int# (word8ToWord# w)))
             | otherwise                        = 0xff
 
         !rsetTable = "\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\
